@@ -19,6 +19,7 @@ const router = express.Router();
 
 const IMAGE_EXT = ["jpg", "jpeg", "png"];
 const DOC_EXT = ["pdf", "txt", "doc", "xlsx", "csv", "pptx"];
+const VIDEO_EXT = ["mp4", "mkv", "avi", "webm", "mov"];
 
 const MAX_IMG_SIZE = 5 * 1024 * 1024;
 const MAX_DOC_SIZE = 15 * 1024 * 1024;
@@ -29,10 +30,17 @@ const MAX_DOC_SIZE = 15 * 1024 * 1024;
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: async (req, file) => ({
-    folder: "crm/followups", // 👈 folder in cloudinary
-    resource_type: "auto",   // 👈 supports image/pdf/excel
-  }),
+  params: async (req, file) => {
+    const ext = file.originalname.split(".").pop().toLowerCase();
+    let resType = "auto";
+    if (["pdf", "txt", "doc", "xlsx", "csv", "pptx"].includes(ext)) {
+      resType = "raw";
+    }
+    return {
+      folder: "crm/followups",
+      resource_type: resType,
+    };
+  },
 });
 
 // =============================
@@ -45,7 +53,7 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const ext = file.originalname.split(".").pop().toLowerCase();
 
-    if (![...IMAGE_EXT, ...DOC_EXT].includes(ext)) {
+    if (![...IMAGE_EXT, ...DOC_EXT, ...VIDEO_EXT].includes(ext)) {
       return cb(new Error("Unsupported file type"), false);
     }
 
