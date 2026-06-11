@@ -18,11 +18,10 @@ const router = express.Router();
 // =============================
 
 const IMAGE_EXT = ["jpg", "jpeg", "png"];
-const DOC_EXT = ["pdf", "txt", "doc", "xlsx", "csv", "pptx"];
-const VIDEO_EXT = ["mp4", "mkv", "avi", "webm", "mov"];
+const DOC_EXT = ["pdf", "txt", "doc", "xlsx", "csv", "pptx", "dwg"];
 
 const MAX_IMG_SIZE = 5 * 1024 * 1024;
-const MAX_DOC_SIZE = 15 * 1024 * 1024;
+const MAX_DOC_SIZE = 5 * 1024 * 1024;
 
 // =============================
 // CLOUDINARY STORAGE (NEW)
@@ -30,17 +29,10 @@ const MAX_DOC_SIZE = 15 * 1024 * 1024;
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: async (req, file) => {
-    const ext = file.originalname.split(".").pop().toLowerCase();
-    let resType = "auto";
-    if (["pdf", "txt", "doc", "xlsx", "csv", "pptx"].includes(ext)) {
-      resType = "raw";
-    }
-    return {
-      folder: "crm/followups",
-      resource_type: resType,
-    };
-  },
+  params: async (req, file) => ({
+    folder: "crm/followups", // 👈 folder in cloudinary
+    resource_type: "auto",   // 👈 supports image/pdf/excel
+  }),
 });
 
 // =============================
@@ -53,7 +45,7 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const ext = file.originalname.split(".").pop().toLowerCase();
 
-    if (![...IMAGE_EXT, ...DOC_EXT, ...VIDEO_EXT].includes(ext)) {
+    if (![...IMAGE_EXT, ...DOC_EXT].includes(ext)) {
       return cb(new Error("Unsupported file type"), false);
     }
 
@@ -90,7 +82,18 @@ function validateUploadedFiles(req) {
 router.post(
   "/insert",
   authenticateAndAuthorize(),
-  upload.array("files", 5),
+  (req, res, next) => {
+    upload.array("files", 5)(req, res, (err) => {
+      if (err) {
+        console.log("MULTER ERROR =>", err);
+        return res.status(400).json({
+          success: false,
+          message: err.message,
+        });
+      }
+      next();
+    });
+  },
   async (req, res) => {
     try {
       const sizeError = validateUploadedFiles(req);
