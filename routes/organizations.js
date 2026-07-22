@@ -67,12 +67,12 @@ router.get("/read", authenticateAndAuthorize("Super Admin"), (req, res) => {
     try {
 
         const page = parseInt(req.query.page) || 1;
-        const limit = 5;
+        const limit = parseInt(req.query.limit) || 1000; // Frontend client-side pagination karva mate badhu data mangave che
         const offset = (page - 1) * limit
 
         const countSql = `SELECT COUNT(*) AS total FROM organizations`;
 
-        const dataSql = `SELECT organization_name, email, address_1, country, state FROM organizations
+        const dataSql = `SELECT * FROM organizations ORDER BY id ASC
         LIMIT ? OFFSET ?`;
 
         db.query(countSql, (countErr, countResult) => {
@@ -129,6 +129,90 @@ router.get("/get-column-scroll", authenticateAndAuthorize("Super Admin"), async 
   );
 
   res.json({ success: true, data: rows, newOffset, total });
+});
+
+
+// Update organization (used by Edit popup on read-table page)
+router.put("/update/:id", authenticateAndAuthorize("Super Admin"), (req, res) => {
+    const { id } = req.params;
+    const {
+        organization_name,
+        industry,
+        email,
+        address_1,
+        address_2,
+        country,
+        state,
+        city,
+        pincode,
+        gst_number,
+        contact_1,
+        contact_2,
+        benificiary_name,
+        bank_name,
+        account_no,
+        account_type,
+        ifsc_code,
+        micr_code,
+    } = req.body;
+
+    const sql = `UPDATE organizations SET
+        organization_name = ?, industry = ?, email = ?, address_1 = ?, address_2 = ?, country = ?, state = ?,
+        city = ?, pincode = ?, gst_number = ?, contact_1 = ?, contact_2 = ?, benificiary_name = ?, bank_name = ?,
+        account_no = ?, account_type = ?, ifsc_code = ?, micr_code = ?
+        WHERE id = ?`;
+
+    const values = [
+        organization_name,
+        industry,
+        email,
+        address_1,
+        address_2,
+        country,
+        state,
+        city,
+        pincode,
+        gst_number,
+        contact_1,
+        contact_2,
+        benificiary_name,
+        bank_name,
+        account_no,
+        account_type,
+        ifsc_code,
+        micr_code,
+        id,
+    ];
+
+    db.query(sql, values, (err, result) => {
+        if (err) {
+            console.error("Error updating data:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Record not found" });
+        }
+        res.status(200).json({ message: "Organization updated successfully" });
+    });
+});
+
+
+// Delete organization (used by Delete popup on read-table page)
+router.delete("/delete/:id", authenticateAndAuthorize("Super Admin"), (req, res) => {
+    const { id } = req.params;
+
+    const sql = `DELETE FROM organizations WHERE id = ?`;
+
+    db.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error("Error deleting data:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Record not found" });
+        }
+        res.status(200).json({ message: "Organization deleted successfully" });
+    });
 });
 
 
