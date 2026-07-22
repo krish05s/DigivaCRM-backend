@@ -61,20 +61,42 @@ router.get("/read", authenticateAndAuthorize(), (req, res) => {
 
     sql += ` ORDER BY l.lead_id DESC`;
 
-    db.query(sql, values, (err, result) => {
-      if (err) {
-        console.log(err);
 
-        return res.status(500).json({success: false, error: err,
+     db.query(sql, values, (err, result) => {
+       if (err) {
+           console.error("READ API ERROR:");
+           console.error(err);
+   
+           return res.status(500).json({
+               success: false,
+               message: err.message,
+               code: err.code,
+               errno: err.errno,
+               sqlMessage: err.sqlMessage,
+               sql: err.sql
+           });
+       }
+   
+       res.json({
+           success: true,
+           result,
+       });
+   });
+
+    // db.query(sql, values, (err, result) => {
+    //   if (err) {
+    //     console.log(err);
+
+    //     return res.status(500).json({success: false, error: err,
           
-        });
-      }
+    //     });
+    //   }
 
-      res.json({
-        success: true,
-        result,
-      });
-    });
+    //   res.json({
+    //     success: true,
+    //     result,
+    //   });
+    // });
   });
 });
 /* =====================================
