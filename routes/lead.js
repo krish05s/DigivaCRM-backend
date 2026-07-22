@@ -763,6 +763,7 @@ router.get("/sales/leads/customers", authenticateAndAuthorize(), (req, res) => {
 //         success: false,
 //         error: err,
 //       });
+
 //     }
 
 //     res.json({
